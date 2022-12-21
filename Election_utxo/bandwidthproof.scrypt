@@ -1,0 +1,10 @@
+library Bandwithproof{
+    
+    public PubKey pubKey;
+    public int band_width;
+    public int node_weight;
+    public Ripemd160 voc_vote;
+    public Sig sig;
+}
+
+

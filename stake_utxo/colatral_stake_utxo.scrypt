@@ -1,0 +1,19 @@
+library Stake_colatral{
+
+static function Colatral(SigHashPreimage img,int tokenid,PubKey recever): int{
+        require(Tx.checkPreimage(img));
+        bytes colatral_lockingscript = SigHash.scriptCode(img);
+        int scriptlen = len(colatral_lockingscript);
+        //colatralsig [codepart+token_id+colatal_value+reciver]
+        int constStart = scriptlen-(4*2)-Constants.PubKeyLen;
+        PubKey node = PubKey(colatral_lockingscript[scriptlen-Constants.PubKeyHashLen:]);
+        require(node == recever);
+        int token_Id = unpack(colatral_lockingscript[constStart : constStart+4]);
+        require(token_Id == tokenid);
+        int colatral_value = unpack(colatral_lockingscript[constStart+4:scriptlen-Constants.PubKeyLen]);
+        require(colatral_value > 0);
+        return colatral_value;
+}
+
+
+}

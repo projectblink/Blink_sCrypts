@@ -1,0 +1,12 @@
+library Node{
+    
+  Ripemd160 pubKeyHash;
+
+  constructor(Ripemd160 pubKeyHash) {
+    this.pubKeyHash = pubKeyHash;
+  }
+
+
+
+
+}

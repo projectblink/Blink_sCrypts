@@ -1,0 +1,99 @@
+
+struct ScriptCode {
+    int version;
+    int dataPartLen;
+    /* The datapart consists of the value order of the @state properties, where the bool type is represented by a byte, 
+    and the other types use minimal push rules */
+    bytes dataPart;
+    // codePart of the contract
+    bytes codePart;
+}
+
+library Util {
+
+    // build P2PKH script from public key
+    static function pubKeyToP2PKH(PubKey pubKey) : bytes {
+        return Utils.buildPublicKeyHashScript(hash160(pubKey));
+    }
+
+
+    // number of bytes of the VarInt field read from the beginning of 'b'
+    static function readVarintLen(bytes b) : int {
+        int len = 0;
+        bytes header = b[0 : 1];
+
+        if (header == b'fd') {
+            len = 3 + Utils.fromLEUnsigned(b[1 : 3]);
+        }
+        else if (header == b'fe') {
+            len = 5 + Utils.fromLEUnsigned(b[1 : 5]);
+        }
+        else if (header == b'ff') {
+            len = 9 + Utils.fromLEUnsigned(b[1 : 9]);
+        }
+        else {
+            len = 1 + Utils.fromLEUnsigned(b[0 : 1]);
+        }
+
+        return len;
+    }
+
+
+    // Writes variable amount of data respecting minimal push rules
+    static function writeVarMinimalPushdata(bytes b) : bytes {
+        int n = len(b);
+        bytes header = b'';
+        // Reference: https://github.com/moneybutton/bsv/blob/bsv-legacy/lib/script/script.js#L1083
+        if (n == 0) {
+        }
+        else if (n == 1) {
+            int rawInt = Utils.fromLEUnsigned(b);
+            if (rawInt >= 1 && rawInt <= 16) {
+                // If value is between 1 and 16 then use OP_1, OP_2...OP_16 to encode
+                header = Utils.toLEUnsigned(80 + rawInt, 1);
+            }
+            else if (n == 1 && rawInt == 0x81) {
+                // Use OP_1NEGATE
+                header = Utils.toLEUnsigned(79, 1);
+            }
+        }
+        else if (n < 76) {
+            // Use direct push
+            header = Utils.toLEUnsigned(n, 1) + b;
+        }
+        else if (n <= 255) {
+            header = b'4c' + Utils.toLEUnsigned(n, 1) + b;
+        }
+        else if (n <= 65535) {
+            header = b'4d' + Utils.toLEUnsigned(n, 2) + b;
+        }
+        else {
+            header = b'4e' + Utils.toLEUnsigned(n, 4) + b;
+        }
+        return header;
+    }
+
+
+
+    //read data part and contract part of a stateful contract
+    static function parseScriptCode(bytes scriptCode) : ScriptCode { 
+
+        int len = len(scriptCode);
+        bytes metaScript = scriptCode[len - 5:];
+
+        const int version = Utils.fromLEUnsigned(metaScript[4:5]);
+        const int dataPartLen = Utils.fromLEUnsigned(metaScript[0:4]);
+        const int start = len - dataPartLen - 5;
+        const bytes dataPart = scriptCode[start: start + dataPartLen];
+        const bytes codePart = scriptCode[: start];
+        return {version, dataPartLen, dataPart, codePart};
+    }
+
+    //get code hash of a stateful contract
+    static function codeHash(SigHashPreimage txPreimage) : bytes { 
+
+        ScriptCode sc = Util.parseScriptCode(txPreimage);
+
+        return hash160(sc.codePart);
+    }
+}

@@ -1,0 +1,19 @@
+import "colatral_stake_utxo.scrypt";
+import "token_stake_utxo.scrypt";
+
+library Check_Stake_UTXO{
+ 
+  static function verify(int utxo_id,int token_id,PubKey node ,Sig colatral_sig,Sig token_sig,PubKey depositer,int deposit,SigHashPreimage colatral_preImage,SigHashPreimage token_preImage): bool{
+
+        require(checkSig(colatral_sig,depositer));
+        int colatral = Stake_colatral.Colatral(colatral_preImage,token_id,node);
+        require(checkSig(token_sig,depositer));
+        int token = Stake_token.Token(token_preImage,utxo_id,depositer);
+        
+        require(colatral == token);
+        require(deposit > colatral && deposit > token);
+        return true;
+    }
+
+}
+

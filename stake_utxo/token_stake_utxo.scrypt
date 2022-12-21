@@ -1,0 +1,20 @@
+library Stake_token{
+
+    static function Token(SigHashPreimage img,int utxo_id,PubKey recever): int{
+        require(Tx.checkPreimage(img));
+        bytes token_lockingscript = SigHash.scriptCode(img);
+        int scriptlen = len(token_lockingscript);
+        //colatralsig [codepart+utxo_id+token_value+reciver]
+        int constStart = scriptlen-(4*2)-Constants.PubKeyLen;
+        PubKey address = PubKey(token_lockingscript[scriptlen-Constants.PubKeyHashLen:]);
+        require(address == recever);
+        int utxoId = unpack(token_lockingscript[constStart : constStart+4]);
+        require(utxoId == utxo_id);
+        int token_value = unpack(token_lockingscript[constStart+4:scriptlen-Constants.PubKeyLen]);
+        require(token_value > 0);
+        return token_value;
+}
+
+
+
+}

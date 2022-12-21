@@ -1,0 +1,9 @@
+library Stake_Utxo{
+    PubKey node;
+    int token_id;
+    int utxo_id;
+    int limit;
+    int value;
+}
+
+ 
