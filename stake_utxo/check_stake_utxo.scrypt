@@ -11,8 +11,7 @@ library Check_Stake_UTXO{
         int token = Stake_token.Token(token_preImage,utxo_id,depositer);
         
         require(colatral == token);
-        require(deposit > colatral && deposit > token);
-        return true;
+        return deposit > colatral && deposit > token;
     }
 
 }
