@@ -1,0 +1,17 @@
+contract TokenExchange_value{
+    @state
+    int token_value;
+    int mature_time;
+    public function update_oracle(int value,Sig sig,PubKey pubKey,SigHashPreimage img)
+    {
+      require(checkSig(sig,pubKey));
+      require(Tx.checkPreimage(img));
+      this.token_value = value;
+      this.mature_time += 400;
+      require(SigHash.nLocktime(img)+400 == this.mature_time);
+    }
+
+     function get_value():int{
+       return this.token_value;
+    }
+}

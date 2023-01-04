@@ -1,0 +1,18 @@
+import "/home/ajay_stark/Documents/Blink_sCrypts/exchange_rate/eg_exchange_value.scrypt";
+import "/home/ajay_stark/Documents/Blink_sCrypts/tax_utxo/ex_tax_utxo.scrypt";
+
+library Tax_Chain{
+
+    static function check_tax(int utxo_value):int{
+    int tax = 0; 
+    int gains = (utxo_value*Value.ExchangeRate_out)-(utxo_value*Value.ExchangeRate_init);
+    if(gains>0){
+           tax = utxo_value - (gains*(GainsTax.GainsTax/10000))*(Value.ExchangeRate_out);
+    } 
+    else{
+           tax = utxo_value;
+    }
+     return tax;
+    }
+
+}

@@ -1,0 +1,3 @@
+library Const{
+   static int base = 1000000000000000000;
+}

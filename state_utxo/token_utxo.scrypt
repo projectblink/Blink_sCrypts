@@ -1,0 +1,38 @@
+import "/home/ajay_stark/Documents/Blink_sCrypts/consts/const.scrypt";
+import "/home/ajay_stark/Documents/Blink_sCrypts/state_utxo/tax_calculator.scrypt";
+
+contract Token{
+    PubKey pubKey;
+    @state
+    int value;
+    @state
+    int inital_exchange_rate;
+
+    public function spend(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
+            require(Tx.checkPreimage(img));
+            int spendable_money = Tax_Chain.check_tax(this.value);
+            
+            //codepart+op_return+pubkey+amount+exchagnge
+
+            bytes lockingScript = SigHash.scriptCode(img);
+            int scriptLen = len(lockingScript);
+            int amountStart = scriptLen - 8;
+            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
+            
+            require(checkSig(sig, sender));
+            require(sender == this.pubKey);            
+
+            require(amount+update_value == spendable_money);
+            require(exchange_rate == Value.ExchangeRate_out);
+
+            bytes codepart = lockingScript[:amountStart+8];
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(exchange_rate,8);
+
+            bytes output0 = Utils.buildOutput(outputScript0,0);
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8);
+
+            bytes output1 = Utils.buildOutput(outputScript1,0);
+            Sha256 hashoutput = hash256(output0+output1);
+            require(hashoutput == SigHash.hashOutputs(img));
+    }
+}
