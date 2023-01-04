@@ -7,13 +7,15 @@ contract Token{
     int value;
     @state
     int inital_exchange_rate;
+    @state
+    int tds;
 
     public function spend(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
-            int spendable_money = Tax_Chain.check_tax(this.value);
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
             
-            //codepart+op_return+pubkey+amount+exchagnge
-
+            this.tds = 0;
+            //codepart+op_return+pubkey+amount+exchagnge+lpt
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
             int amountStart = scriptLen - 8;
@@ -26,10 +28,10 @@ contract Token{
             require(exchange_rate == Value.ExchangeRate_out);
 
             bytes codepart = lockingScript[:amountStart+8];
-            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(exchange_rate,8);
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(exchange_rate,8)+num2bin(0, 8);
 
             bytes output0 = Utils.buildOutput(outputScript0,0);
-            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8);
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8)+num2bin(this.tds, 8);
 
             bytes output1 = Utils.buildOutput(outputScript1,0);
             Sha256 hashoutput = hash256(output0+output1);
