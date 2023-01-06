@@ -1,4 +1,3 @@
-import "/home/ajay_stark/Documents/Blink_sCrypts/consts/const.scrypt";
 import "/home/ajay_stark/Documents/Blink_sCrypts/state_utxo/tax_calculator.scrypt";
 
 contract Token{
@@ -10,7 +9,7 @@ contract Token{
     @state
     int tds;
 
-    public function spend(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
+    public function pay_individual(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
             int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
             
@@ -37,4 +36,37 @@ contract Token{
             Sha256 hashoutput = hash256(output0+output1);
             require(hashoutput == SigHash.hashOutputs(img));
     }
+    
+    public function pay_merchant(int amount,int update_value,int exchange_rate,PubKey reciver,PubKey gov,bool proof,int tax_rate,Sig sig,SigHashPreimage img){
+            require(Tx.checkPreimage(img));
+            require(proof);
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
+            int tax = amount - (amount*(tax_rate/10000));
+            this.tds = 0;
+            //codepart+op_return+pubkey+amount+exchagnge+lpt
+            bytes lockingScript = SigHash.scriptCode(img);
+            int scriptLen = len(lockingScript);
+            int amountStart = scriptLen - 8;
+            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
+            
+            require(checkSig(sig, sender));
+            require(sender == this.pubKey);            
+
+            require(amount+update_value+tax == spendable_money);
+            require(exchange_rate == Value.ExchangeRate_out);
+            
+            bytes codepart = lockingScript[:amountStart+8];
+            
+            bytes outputScript0 = codepart + reciver + num2bin(amount,8) + num2bin(exchange_rate,8)+num2bin(0, 8);
+            bytes output0 = Utils.buildOutput(outputScript0,0);
+            
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8)+num2bin(this.tds, 8);
+            bytes output1 = Utils.buildOutput(outputScript1,0);
+
+            bytes outputScript2 = codepart + gov + num2bin(tax, 8);
+            bytes output2 = Utils.buildOutput(outputScript2,0);
+            Sha256 hashoutput = hash256(output0+output1+output2);
+            require(hashoutput == SigHash.hashOutputs(img));
+    }
+
 }
