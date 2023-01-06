@@ -1,5 +1,6 @@
 import "/home/ajay_stark/Documents/Blink_sCrypts/state_utxo/tax_calculator.scrypt";
-
+import "/home/ajay_stark/Documents/Blink_sCrypts/trasfre_fee/fee.scrypt";
+import "/home/ajay_stark/Documents/Blink_sCrypts/trasfre_fee/fee_dummy.scrypt";
 contract Token{
     PubKey pubKey;
     @state
@@ -11,6 +12,8 @@ contract Token{
 
     public function pay_individual(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
+            require(amount >= 0);
+            require(update_value >= 0);
             int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
             
             this.tds = 0;
@@ -23,7 +26,8 @@ contract Token{
             require(checkSig(sig, sender));
             require(sender == this.pubKey);            
 
-            require(amount+update_value == spendable_money);
+            require(amount+update_value == spendable_money- Fee.dummy_fee);
+
             require(exchange_rate == Value.ExchangeRate_out);
 
             bytes codepart = lockingScript[:amountStart+8];
@@ -39,6 +43,8 @@ contract Token{
     
     public function pay_merchant(int amount,int update_value,int exchange_rate,PubKey reciver,PubKey gov,bool proof,int tax_rate,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
+            require(amount >= 0);
+            require(update_value >= 0);
             require(proof);
             int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
             int tax = amount - (amount*(tax_rate/10000));
@@ -52,7 +58,7 @@ contract Token{
             require(checkSig(sig, sender));
             require(sender == this.pubKey);            
 
-            require(amount+update_value+tax == spendable_money);
+            require(amount+update_value+tax == spendable_money-Fee.dummy_fee);
             require(exchange_rate == Value.ExchangeRate_out);
             
             bytes codepart = lockingScript[:amountStart+8];

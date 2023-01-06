@@ -1,6 +1,7 @@
 contract TokenExchange_value{
     @state
     int token_value;
+    @state
     int mature_time;
     public function update_oracle(int value,Sig sig,PubKey pubKey,SigHashPreimage img)
     {

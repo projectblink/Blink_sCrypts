@@ -1,0 +1,5 @@
+library Fee{
+
+    static int dummy_fee = 10;
+
+}

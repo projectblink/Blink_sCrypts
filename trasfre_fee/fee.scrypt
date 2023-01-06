@@ -1,0 +1,21 @@
+contract Transfer_fee{
+    PubKey pubKey;
+    @state
+    int fee;
+    @state
+    int mature_time;
+    public function update_fee(int fee,Sig sig,PubKey pubKey,SigHashPreimage img)
+    {   
+      require(checkSig(sig,pubKey));
+      require(Tx.checkPreimage(img));
+      this.fee = fee;
+      this.mature_time += 10000;
+      require(SigHash.nLocktime(img)+10000 == this.mature_time);
+      
+
+    }
+
+     function get_value():int{
+       return this.fee;
+    }
+}
