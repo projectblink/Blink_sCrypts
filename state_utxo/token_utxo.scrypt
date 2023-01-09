@@ -14,7 +14,7 @@ contract Token{
     
 
 
-    public function pay_individual(int amount,int update_value,int time,PubKey recever,
+    public function pay_individual(int amount,int update_value,PubKey recever,
     BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
     ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
     bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
@@ -68,7 +68,7 @@ contract Token{
             require(hashoutput == SigHash.hashOutputs(img));
     }
 
-    public function pay_merchant(int amount,int update_value,int time,PubKey recever,PubKey gov,bool proof,int layerd_tax,
+    public function pay_merchant(int amount,int update_value,PubKey recever,PubKey gov,bool proof,int layerd_tax,
     BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
     ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
     bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
@@ -79,7 +79,7 @@ contract Token{
 
             int tax = amount - (amount*(layerd_tax/10000));
             this.tds = 0;
-            
+
             //codepart+op_return+pubkey+amount+exchagnge+tds
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
