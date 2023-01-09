@@ -11,8 +11,4 @@ contract TokenExchange_value{
       this.mature_time += 400;
       require(SigHash.nLocktime(img)+400 == this.mature_time);
     }
-
-     function get_value():int{
-       return this.token_value;
-    }
 }

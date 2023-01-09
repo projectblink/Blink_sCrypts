@@ -1,5 +1,0 @@
-library Value{
-
-    static int ExchangeRate_init = 10;
-    static int ExchangeRate_out = 20;
-}
