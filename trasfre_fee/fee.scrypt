@@ -11,11 +11,5 @@ contract Transfer_fee{
       this.fee = fee;
       this.mature_time += 10000;
       require(SigHash.nLocktime(img)+10000 == this.mature_time);
-      
-
-    }
-
-     function get_value():int{
-       return this.fee;
     }
 }

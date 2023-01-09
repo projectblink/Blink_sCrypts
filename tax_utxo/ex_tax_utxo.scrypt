@@ -1,3 +1,0 @@
-library GainsTax{
-    static int GainsTax = 30;
-}

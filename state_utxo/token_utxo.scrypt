@@ -1,76 +1,131 @@
 import "/home/ajay_stark/Documents/Blink_sCrypts/state_utxo/tax_calculator.scrypt";
-import "/home/ajay_stark/Documents/Blink_sCrypts/trasfre_fee/fee.scrypt";
-import "/home/ajay_stark/Documents/Blink_sCrypts/trasfre_fee/fee_dummy.scrypt";
+import "/home/ajay_stark/Documents/Blink_sCrypts/lib/blockchain.scrypt";
+
+
 contract Token{
     PubKey pubKey;
+    int time;
     @state
     int value;
     @state
     int inital_exchange_rate;
     @state
     int tds;
+    
 
-    public function pay_individual(int amount,int update_value,int exchange_rate,PubKey recever,Sig sig,SigHashPreimage img){
+
+    public function pay_individual(int amount,int update_value,int time,PubKey recever,
+    BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
+    ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
+    bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
             require(amount >= 0);
-            require(update_value >= 0);
-            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
-            
+            require(update_value >= 0);            
             this.tds = 0;
-            //codepart+op_return+pubkey+amount+exchagnge+lpt
+
+            //codepart+op_return+pubkey+amount+exchagnge+tds
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
-            int amountStart = scriptLen - 8;
+            int amountStart = scriptLen - 24;
             PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
-            
+            bytes current_exchange_rate = lockingScript[amountStart+8:amountStart+16];
+ 
             require(checkSig(sig, sender));
-            require(sender == this.pubKey);            
+            require(sender == this.pubKey);   
+        
+            //exchange rate 
+            Sha256 current_exchange_hash = Sha256(current_exchange_rate);
+            require(Blockchain.isBlockHeaderValid(exchange_rate_bh,exchange_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_exchange_hash, exchange_rate_bh, exchange_rate_merkleProof));
+            
+            //tax price
+            Sha256 current_tax_hash = Sha256(tax_rate);
+            require(Blockchain.isBlockHeaderValid(tax_rate_bh,tax_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_tax_hash, tax_rate_bh, tax_rate_merkleProof));
 
-            require(amount+update_value == spendable_money- Fee.dummy_fee);
+            //fee amount
+            Sha256 current_fee_hash = Sha256(fee);
+            require(Blockchain.isBlockHeaderValid(fee_rate_bh,fee_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_fee_hash, fee_rate_bh, fee_rate_merkleProof));
 
-            require(exchange_rate == Value.ExchangeRate_out);
+            
+            //spendable money after taxes 
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,unpack(current_exchange_rate),unpack(tax_rate));
 
+            require(amount+update_value == spendable_money- unpack(fee));
+      
             bytes codepart = lockingScript[:amountStart+8];
-            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(exchange_rate,8)+num2bin(0, 8);
-
+            
+            //output to the resever
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(unpack(current_exchange_rate),8)+num2bin(0, 8);
             bytes output0 = Utils.buildOutput(outputScript0,0);
-            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8)+num2bin(this.tds, 8);
-
+            
+            //state update output 
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(unpack(current_exchange_rate),8)+num2bin(this.tds, 8);
             bytes output1 = Utils.buildOutput(outputScript1,0);
+            
             Sha256 hashoutput = hash256(output0+output1);
             require(hashoutput == SigHash.hashOutputs(img));
     }
-    
-    public function pay_merchant(int amount,int update_value,int exchange_rate,PubKey reciver,PubKey gov,bool proof,int tax_rate,Sig sig,SigHashPreimage img){
+
+    public function pay_merchant(int amount,int update_value,int time,PubKey recever,PubKey gov,bool proof,int layerd_tax,
+    BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
+    ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
+    bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
             require(amount >= 0);
             require(update_value >= 0);
             require(proof);
-            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)));
-            int tax = amount - (amount*(tax_rate/10000));
+
+            int tax = amount - (amount*(layerd_tax/10000));
             this.tds = 0;
-            //codepart+op_return+pubkey+amount+exchagnge+lpt
+            
+            //codepart+op_return+pubkey+amount+exchagnge+tds
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
             int amountStart = scriptLen - 8;
             PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
+            bytes current_exchange_rate = lockingScript[amountStart+8:amountStart+16];
+
             
             require(checkSig(sig, sender));
-            require(sender == this.pubKey);            
+            require(sender == this.pubKey);     
+        
+            //exchange rate 
+            Sha256 current_exchange_hash = Sha256(current_exchange_rate);
+            require(Blockchain.isBlockHeaderValid(exchange_rate_bh,exchange_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_exchange_hash, exchange_rate_bh, exchange_rate_merkleProof));
+            
+            //tax price
+            Sha256 current_tax_hash = Sha256(tax_rate);
+            require(Blockchain.isBlockHeaderValid(tax_rate_bh,tax_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_tax_hash, tax_rate_bh, tax_rate_merkleProof));
 
-            require(amount+update_value+tax == spendable_money-Fee.dummy_fee);
-            require(exchange_rate == Value.ExchangeRate_out);
+            //fee amount
+            Sha256 current_fee_hash = Sha256(fee);
+            require(Blockchain.isBlockHeaderValid(fee_rate_bh,fee_rate_blockchainTarget));
+            require(Blockchain.txInBlock(current_fee_hash, fee_rate_bh, fee_rate_merkleProof));
+
+            
+            //spendable money after taxes 
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,unpack(current_exchange_rate),unpack(tax_rate));         
+
+            require(amount+update_value+tax == spendable_money-unpack(fee));
             
             bytes codepart = lockingScript[:amountStart+8];
             
-            bytes outputScript0 = codepart + reciver + num2bin(amount,8) + num2bin(exchange_rate,8)+num2bin(0, 8);
+            //output to the resever
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(unpack(current_exchange_rate),8)+num2bin(0, 8);
             bytes output0 = Utils.buildOutput(outputScript0,0);
             
-            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(exchange_rate,8)+num2bin(this.tds, 8);
+            //state update output
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(unpack(current_exchange_rate),8)+num2bin(this.tds, 8);
             bytes output1 = Utils.buildOutput(outputScript1,0);
-
+            
+            //out of the tax paid 
             bytes outputScript2 = codepart + gov + num2bin(tax, 8);
             bytes output2 = Utils.buildOutput(outputScript2,0);
+
             Sha256 hashoutput = hash256(output0+output1+output2);
             require(hashoutput == SigHash.hashOutputs(img));
     }
