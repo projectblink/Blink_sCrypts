@@ -11,7 +11,8 @@ contract Token{
     int inital_exchange_rate;
     @state
     int tds;
-
+     
+    //pay to individual without layered tax
     public function pay_individual(int amount,int update_value,PubKey recever,
     BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
     ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
@@ -66,7 +67,8 @@ contract Token{
             Sha256 hashoutput = hash256(output0+output1);
             require(hashoutput == SigHash.hashOutputs(img));
     }
-
+    
+    //pay to m without layered tax
     public function pay_merchant(int amount,int update_value,PubKey recever,PubKey gov,bool proof,int layerd_tax,
     BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
     ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,

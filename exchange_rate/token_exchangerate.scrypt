@@ -9,6 +9,6 @@ contract TokenExchange_value{
       require(Tx.checkPreimage(img));
       this.token_value = value;
       this.mature_time += 400;
-      require(SigHash.nLocktime(img)+400 == this.mature_time);
+      require(SigHash.nLocktime(img)>=0 && SigHash.nLocktime(img)+400 == this.mature_time);
     }
 }

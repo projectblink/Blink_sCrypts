@@ -10,6 +10,6 @@ contract Transfer_fee{
       require(Tx.checkPreimage(img));
       this.fee = fee;
       this.mature_time += 10000;
-      require(SigHash.nLocktime(img)+10000 == this.mature_time);
+      require(SigHash.nLocktime(img)>=0 && SigHash.nLocktime(img)+10000 == this.mature_time);
     }
 }
