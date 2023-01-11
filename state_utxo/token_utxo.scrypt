@@ -11,13 +11,12 @@ contract Token{
     int inital_exchange_rate;
     @state
     int tds;
-    
-
 
     public function pay_individual(int amount,int update_value,PubKey recever,
     BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
     ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
     bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
+        
             require(Tx.checkPreimage(img));
             require(amount >= 0);
             require(update_value >= 0);            
