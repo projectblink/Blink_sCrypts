@@ -1,9 +1,9 @@
 contract Tax_Utxo{
- 
+    
+    PubKey pubKey;
     @state
     int gainstax_rate;
-    PubKey pubKey;
-
+  
     public function update_gainstax(int updated_tax,Sig sig,SigHashPreimage img){
         require(checkSig(sig,this.pubKey));
         require(Tx.checkPreimage(img));

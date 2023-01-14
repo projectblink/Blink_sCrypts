@@ -14,9 +14,9 @@ contract Token{
      
     //pay to individual without layered tax
     public function pay_individual(int amount,int update_value,PubKey recever,
-    BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
-    ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
-    bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
+    SigHashPreimage current_exchange_rate,BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
+    ,SigHashPreimage tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
+    SigHashPreimage fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
         
             require(Tx.checkPreimage(img));
             require(amount >= 0);
@@ -28,7 +28,22 @@ contract Token{
             int scriptLen = len(lockingScript);
             int amountStart = scriptLen - 24;
             PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
-            bytes current_exchange_rate = lockingScript[amountStart+8:amountStart+16];
+
+            //codepart+op_return+token_value+mature_time
+            bytes current_exchange_rate_Script = SigHash.scriptCode(current_exchange_rate);
+            int current_exchange_rate_scriptLen = len(current_exchange_rate_Script);
+            int current_exchange_rate_value = unpack(current_exchange_rate_Script[current_exchange_rate_scriptLen-16 : current_exchange_rate_scriptLen-8]);
+
+
+            //codepart+op_return+pubkey+value
+            bytes tax_rate_Script = SigHash.scriptCode(current_exchange_rate);
+            int tax_rate_scriptLen = len(tax_rate_Script);
+            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : ]);
+
+            //codepart+op_return+pubkey+fee+mature_time
+            bytes fee_Script = SigHash.scriptCode(fee);
+            int fee_scriptLen = len(fee_Script);
+            int fee_value = unpack(fee_Script[fee_scriptLen-16 : fee_scriptLen-8]);
  
             require(checkSig(sig, sender));
             require(sender == this.pubKey);   
@@ -50,18 +65,18 @@ contract Token{
 
             
             //spendable money after taxes 
-            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,unpack(current_exchange_rate),unpack(tax_rate));
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,current_exchange_rate_value,tax_rate_value);
 
-            require(amount+update_value == spendable_money- unpack(fee));
+            require(amount+update_value == spendable_money - fee_value);
       
             bytes codepart = lockingScript[:amountStart+8];
             
             //output to the resever
-            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(unpack(current_exchange_rate),8)+num2bin(0, 8);
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(current_exchange_rate_value,8)+num2bin(0, 8);
             bytes output0 = Utils.buildOutput(outputScript0,0);
             
             //state update output 
-            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(unpack(current_exchange_rate),8)+num2bin(this.tds, 8);
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(current_exchange_rate_value,8)+num2bin(this.tds, 8);
             bytes output1 = Utils.buildOutput(outputScript1,0);
             
             Sha256 hashoutput = hash256(output0+output1);
@@ -70,9 +85,9 @@ contract Token{
     
     //pay to m without layered tax
     public function pay_merchant(int amount,int update_value,PubKey recever,PubKey gov,bool proof,int layerd_tax,
-    BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
-    ,bytes tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
-    bytes fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
+    SigHashPreimage current_exchange_rate,BlockHeader exchange_rate_bh,MerkleProof exchange_rate_merkleProof,int exchange_rate_blockchainTarget
+    ,SigHashPreimage tax_rate,BlockHeader tax_rate_bh,MerkleProof tax_rate_merkleProof,int tax_rate_blockchainTarget,
+    SigHashPreimage fee,BlockHeader fee_rate_bh,MerkleProof fee_rate_merkleProof,int fee_rate_blockchainTarget,Sig sig,SigHashPreimage img){
             require(Tx.checkPreimage(img));
             require(amount >= 0);
             require(update_value >= 0);
@@ -81,16 +96,30 @@ contract Token{
             int tax = amount - (amount*(layerd_tax/10000));
             this.tds = 0;
 
-            //codepart+op_return+pubkey+amount+exchagnge+tds
+             //codepart+op_return+pubkey+amount+exchagnge+tds
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
-            int amountStart = scriptLen - 8;
+            int amountStart = scriptLen - 24;
             PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
-            bytes current_exchange_rate = lockingScript[amountStart+8:amountStart+16];
 
-            
+            //codepart+op_return+token_value+mature_time
+            bytes current_exchange_rate_Script = SigHash.scriptCode(current_exchange_rate);
+            int current_exchange_rate_scriptLen = len(current_exchange_rate_Script);
+            int current_exchange_rate_value = unpack(current_exchange_rate_Script[current_exchange_rate_scriptLen-16 : current_exchange_rate_scriptLen-8]);
+
+
+            //codepart+op_return+pubkey+value
+            bytes tax_rate_Script = SigHash.scriptCode(current_exchange_rate);
+            int tax_rate_scriptLen = len(tax_rate_Script);
+            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : ]);
+
+            //codepart+op_return+pubkey+fee+mature_time
+            bytes fee_Script = SigHash.scriptCode(fee);
+            int fee_scriptLen = len(fee_Script);
+            int fee_value = unpack(fee_Script[fee_scriptLen-16 : fee_scriptLen-8]);
+ 
             require(checkSig(sig, sender));
-            require(sender == this.pubKey);     
+            require(sender == this.pubKey);   
         
             //exchange rate 
             Sha256 current_exchange_hash = Sha256(current_exchange_rate);
@@ -109,18 +138,18 @@ contract Token{
 
             
             //spendable money after taxes 
-            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,unpack(current_exchange_rate),unpack(tax_rate));         
+            int spendable_money = Tax_Chain.check_tax(this.value-(this.value*(this.tds/10000)),this.inital_exchange_rate,current_exchange_rate_value,tax_rate_value);         
 
-            require(amount+update_value+tax == spendable_money-unpack(fee));
+            require(amount+update_value+tax == spendable_money-fee_value);
             
             bytes codepart = lockingScript[:amountStart+8];
             
             //output to the resever
-            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(unpack(current_exchange_rate),8)+num2bin(0, 8);
+            bytes outputScript0 = codepart + recever + num2bin(amount,8) + num2bin(current_exchange_rate_value,8)+num2bin(0, 8);
             bytes output0 = Utils.buildOutput(outputScript0,0);
             
             //state update output
-            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(unpack(current_exchange_rate),8)+num2bin(this.tds, 8);
+            bytes outputScript1 = codepart + this.pubKey + num2bin(update_value,8)+num2bin(current_exchange_rate_value,8)+num2bin(this.tds, 8);
             bytes output1 = Utils.buildOutput(outputScript1,0);
             
             //out of the tax paid 
