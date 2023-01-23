@@ -3,6 +3,9 @@ import "/home/ajay_stark/Documents/Blink_sCrypts/lib/blockchain.scrypt";
 
 
 contract Token{
+    static const int DataLen = 1;
+    static const bytes ISSUE = b'00';
+    static const bytes TRANSFER = b'01';
     PubKey pubKey;
     int time;
     @state
@@ -27,7 +30,7 @@ contract Token{
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
             int amountStart = scriptLen - 24;
-            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
+            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart - 1]);
 
             //codepart+op_return+token_value+mature_time
             bytes current_exchange_rate_Script = SigHash.scriptCode(current_exchange_rate);
@@ -38,7 +41,7 @@ contract Token{
             //codepart+op_return+pubkey+value
             bytes tax_rate_Script = SigHash.scriptCode(current_exchange_rate);
             int tax_rate_scriptLen = len(tax_rate_Script);
-            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : ]);
+            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : tax_rate_scriptLen]);
 
             //codepart+op_return+pubkey+fee+mature_time
             bytes fee_Script = SigHash.scriptCode(fee);
@@ -100,7 +103,7 @@ contract Token{
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
             int amountStart = scriptLen - 24;
-            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart]);
+            PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart-1]);
 
             //codepart+op_return+token_value+mature_time
             bytes current_exchange_rate_Script = SigHash.scriptCode(current_exchange_rate);
@@ -111,7 +114,7 @@ contract Token{
             //codepart+op_return+pubkey+value
             bytes tax_rate_Script = SigHash.scriptCode(current_exchange_rate);
             int tax_rate_scriptLen = len(tax_rate_Script);
-            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : ]);
+            int tax_rate_value = unpack(tax_rate_Script[tax_rate_scriptLen-8 : tax_rate_scriptLen]);
 
             //codepart+op_return+pubkey+fee+mature_time
             bytes fee_Script = SigHash.scriptCode(fee);
