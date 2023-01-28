@@ -4,8 +4,6 @@ import "/home/ajay_stark/Documents/Blink_sCrypts/lib/blockchain.scrypt";
 
 contract Token{
     static const int DataLen = 1;
-    static const bytes ISSUE = b'00';
-    static const bytes TRANSFER = b'01';
     PubKey pubKey;
     int time;
     @state
@@ -29,7 +27,7 @@ contract Token{
             //codepart+op_return+pubkey+amount+exchagnge+tds
             bytes lockingScript = SigHash.scriptCode(img);
             int scriptLen = len(lockingScript);
-            int amountStart = scriptLen - 24;
+            int amountStart = 138;
             PubKey sender = PubKey(lockingScript[amountStart - 33 : amountStart - 1]);
 
             //codepart+op_return+token_value+mature_time

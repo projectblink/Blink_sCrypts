@@ -1,18 +1,16 @@
 contract TestUTXO {
+    static const int DataLen = 1;
+    PubKey pubKey;
     @state
     int amount;
-    PubKey pubKey;
-    constructor(PubKey pubKey) {
-        this.pubKey = pubKey;
-    }
-    public function spend(Sig sig, SigHashPreimage preimage) {
+    public function spend(Sig sig, int amount ,SigHashPreimage preimage) {
         require(checkSig(sig, this.pubKey));
         require(Tx.checkPreimage(preimage));
         bytes scriptCode = SigHash.scriptCode(preimage);
-        int scriptLen = len(scriptCode);
-        int inputAmount = unpack(scriptCode[scriptLen - 8 : scriptLen]);
-        require(inputAmount <= this.amount);
-        this.amount -= inputAmount;
+        int codeend = 138;
+        int inputAmount = unpack(scriptCode[codeend : codeend+DataLen]);
+        require(inputAmount == amount);
+        this.amount = inputAmount;
         require(this.amount >= 0);
     }
 }
