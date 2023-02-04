@@ -7,10 +7,12 @@ contract TestUTXO {
         require(checkSig(sig, this.pubKey));
         require(Tx.checkPreimage(preimage));
         bytes scriptCode = SigHash.scriptCode(preimage);
-        int codeend = 138;
+        int codeend = 104;
         int inputAmount = unpack(scriptCode[codeend : codeend+DataLen]);
-        require(inputAmount == amount);
-        this.amount = inputAmount;
+        PubKey sender = PubKey(scriptCode[codeend+DataLen:(codeend+DataLen)+Constants.PubKeyLen]);
+        require(inputAmount <= (amount - (amount*30/100)));
+        require(sender == this.pubKey);
+        this.amount -= inputAmount;
         require(this.amount >= 0);
     }
 }
