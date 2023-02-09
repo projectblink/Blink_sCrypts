@@ -1,18 +1,25 @@
 contract TestUTXO {
     static const int DataLen = 1;
-    PubKey pubKey;
     @state
     int amount;
-    public function spend(Sig sig, int amount ,SigHashPreimage preimage) {
+    PubKey pubKey;
+    @state
+    int oracle_rate;
+    int tds;
+
+    public function spend(Sig sig, int amount ,int current_oracle_rate,SigHashPreimage preimage) {
         require(checkSig(sig, this.pubKey));
         require(Tx.checkPreimage(preimage));
         bytes scriptCode = SigHash.scriptCode(preimage);
         int codeend = 104;
-        int inputAmount = unpack(scriptCode[codeend : codeend+DataLen]);
-        PubKey sender = PubKey(scriptCode[codeend+DataLen:(codeend+DataLen)+Constants.PubKeyLen]);
-        require(inputAmount <= (amount - (amount*30/100)));
+        bytes codepart = scriptCode[:104];
+        PubKey sender = PubKey(scriptCode[codeend+DataLen+1:(codeend+DataLen+1)+Constants.PubKeyLen]);
+        int gains = (this.amount*current_oracle_rate)-(this.amount*this.oracle_rate);
+        if(gains>0)
+          this.amount = this.amount - (gains*(30/100))*(current_oracle_rate);
+        require(amount <= this.amount-this.tds);
         require(sender == this.pubKey);
-        this.amount -= inputAmount;
+        this.amount -= amount;
         require(this.amount >= 0);
     }
 }
