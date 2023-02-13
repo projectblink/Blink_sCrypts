@@ -1,3 +1,5 @@
+import "../state_utxo/tax_calculator.scrypt";
+import "../lib/blockchain.scrypt";
 contract TestUTXO {
     static const int DataLen = 1;
     @state
@@ -7,19 +9,31 @@ contract TestUTXO {
     int oracle_rate;
     int tds;
 
-    public function spend(Sig sig, int amount ,int current_oracle_rate,SigHashPreimage preimage) {
+    public function spend(
+      Sig sig, int amount ,int current_oracle_rate,SigHashPreimage preimage,
+      SigHashPreimage oracle_img,BlockHeader oracle_bh,MerkleProof oracle_merkleProof,int oracle_blockchainTarget) {
+
         require(checkSig(sig, this.pubKey));
         require(Tx.checkPreimage(preimage));
+
         bytes scriptCode = SigHash.scriptCode(preimage);
         int codeend = 104;
         bytes codepart = scriptCode[:104];
         PubKey sender = PubKey(scriptCode[codeend+DataLen+1:(codeend+DataLen+1)+Constants.PubKeyLen]);
+
+        Sha256 current_exchange_hash = Sha256(oracle_img);
+        require(Blockchain.isBlockHeaderValid(oracle_bh,oracle_blockchainTarget));
+        require(Blockchain.txInBlock(current_exchange_hash, oracle_bh, oracle_merkleProof));
+
         int gains = (this.amount*current_oracle_rate)-(this.amount*this.oracle_rate);
         if(gains>0)
           this.amount = this.amount - (gains*(30/100))*(current_oracle_rate);
+
         require(amount <= this.amount-this.tds);
         require(sender == this.pubKey);
+
         this.amount -= amount;
+        
         require(this.amount >= 0);
     }
 }
